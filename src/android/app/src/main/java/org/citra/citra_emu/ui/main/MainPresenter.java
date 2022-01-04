@@ -54,9 +54,6 @@ public final class MainPresenter {
                 launchFileListActivity(REQUEST_INSTALL_CIA);
                 return true;
 
-            case R.id.button_premium:
-                mView.launchSettingsActivity(Settings.SECTION_PREMIUM);
-                return true;
         }
 
         return false;
