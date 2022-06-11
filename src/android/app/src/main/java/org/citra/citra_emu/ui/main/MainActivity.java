@@ -19,6 +19,7 @@ import org.citra.citra_emu.features.settings.ui.SettingsActivity;
 import org.citra.citra_emu.model.GameProvider;
 import org.citra.citra_emu.ui.platform.PlatformGamesFragment;
 import org.citra.citra_emu.utils.AddDirectoryHelper;
+import org.citra.citra_emu.utils.BillingManager;
 import org.citra.citra_emu.utils.DirectoryInitialization;
 import org.citra.citra_emu.utils.FileBrowserHelper;
 import org.citra.citra_emu.utils.PermissionsHandler;
@@ -39,6 +40,11 @@ public final class MainActivity extends AppCompatActivity implements MainView {
     private PlatformGamesFragment mPlatformGamesFragment;
 
     private MainPresenter mPresenter = new MainPresenter(this);
+
+    // Singleton to manage user billing state
+    private static BillingManager mBillingManager;
+
+    private static MenuItem mPremiumButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +71,9 @@ public final class MainActivity extends AppCompatActivity implements MainView {
             mPlatformGamesFragment = (PlatformGamesFragment) getSupportFragmentManager().getFragment(savedInstanceState, "mPlatformGamesFragment");
         }
         PicassoUtils.init();
+
+        // Setup billing manager, so we can globally query for Premium status
+        mBillingManager = new BillingManager(this);
 
         // Dismiss previous notifications (should not happen unless a crash occurred)
         EmulationActivity.tryDismissRunningNotification(this);
@@ -99,7 +108,20 @@ public final class MainActivity extends AppCompatActivity implements MainView {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu_game_grid, menu);
+        mPremiumButton = menu.findItem(R.id.button_premium);
+
+        if (mBillingManager.isPremiumCached()) {
+            // User had premium in a previous session, hide upsell option
+            setPremiumButtonVisible(false);
+        }
+
         return true;
+    }
+
+    static public void setPremiumButtonVisible(boolean isVisible) {
+        if (mPremiumButton != null) {
+            mPremiumButton.setVisible(isVisible);
+        }
     }
 
     /**
@@ -233,7 +255,7 @@ public final class MainActivity extends AppCompatActivity implements MainView {
      * @return true if Premium subscription is currently active
      */
     public static boolean isPremiumActive() {
-        return true;
+        return mBillingManager.isPremiumActive();
     }
 
     /**
@@ -242,6 +264,6 @@ public final class MainActivity extends AppCompatActivity implements MainView {
      * @param callback Optional callback, called once, on completion of billing
      */
     public static void invokePremiumBilling(Runnable callback) {
-        //do Nothing
+        mBillingManager.invokePremiumBilling(callback);
     }
 }
